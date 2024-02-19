@@ -65,8 +65,8 @@ function initScene(isWebGPU) {
   light.position.set(-20, 20, 50)
   scene.add(light)
 
-  const dirLightHelper = new THREE.DirectionalLightHelper( light, 10000000, 0xffffff );
-  scene.add( dirLightHelper );
+  // const dirLightHelper = new THREE.DirectionalLightHelper( light, 10000000, 0xffffff );
+  // scene.add( dirLightHelper );
 
   const ambientLight = new THREE.AmbientLight()
   ambientLight.intensity = .1
