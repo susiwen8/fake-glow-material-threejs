@@ -2,17 +2,9 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
 import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
-import { FakeGlowMaterial as FakeGlowMaterialWebGPU } from './FakeGlowMaterialWebGPU.js'
-import FakeGlowMaterial from './FakeGlowMaterial.js';
 
 const params = {
-  falloff: .1,
-  glowInternalRadius: 6,
-  glowColor: new THREE.Color('#8039ea'),
-  glowSharpness: .5,
-  opacity: 1,
-  toneMappingExposure: 1,
-  depthTest: false,
+  side: 1,
 }
 
 function initScene(isWebGPU) {
@@ -70,8 +62,11 @@ function initScene(isWebGPU) {
    */
   const light = new THREE.DirectionalLight()
   light.intensity = 1
-  light.position.set((isWebGPU ? -1 : 1) * -20, (isWebGPU ? -1 : 1) * 20, (isWebGPU ? -1 : 1) * 50)
+  light.position.set(-20, 20, 50)
   scene.add(light)
+
+  const dirLightHelper = new THREE.DirectionalLightHelper( light, 10000000, 0xffffff );
+  scene.add( dirLightHelper );
 
   const ambientLight = new THREE.AmbientLight()
   ambientLight.intensity = .1
@@ -94,35 +89,17 @@ function initScene(isWebGPU) {
   /**
    * SkyBox
    */
-  const geometry = new THREE.SphereGeometry(6, 40, 40)
+  const geometry = new THREE.SphereGeometry(1, 40, 40)
   const texture = new THREE.TextureLoader().load('background2.jpg')
   texture.flipY = true
   const material = new THREE.MeshStandardMaterial({
     map: texture,
-    side: THREE.BackSide,
+    side: THREE.DoubleSide,
   })
 
   const skyBox = new THREE.Mesh(geometry, material)
   scene.add(skyBox)
   skyBox.rotation.y = -1
-
-  /**
-   * FakeGlow Material and Mesh
-   */
-
-  const fakeGlowMaterial = isWebGPU ? new FakeGlowMaterialWebGPU(params) : new FakeGlowMaterial(params);
-  const torusMesh = new THREE.TorusKnotGeometry(0.8, 0.5, 128, 128)
-  const Torus = new THREE.Mesh(torusMesh, fakeGlowMaterial)
-  scene.add(Torus)
-
-  /**
-   * Torus with MeshPhysicalMaterial and Mesh
-   */
-
-  const torusMaterial = new THREE.MeshPhysicalMaterial({ color: '#2babab', roughness: 0.2, clearcoat: 1 })
-  const torusMesh2 = new THREE.TorusKnotGeometry(0.8, 0.1, 128, 128)
-  const Torus2 = new THREE.Mesh(torusMesh2, torusMaterial)
-  scene.add(Torus2)
 
   const tick = () => {
     controls.update()
@@ -132,11 +109,11 @@ function initScene(isWebGPU) {
   
   tick();
 
-  return [fakeGlowMaterial, renderer];
+  return material;
 }
 
-const [fakeGlowMaterialWebGPU, webgpu] = initScene(true);
-const [fakeGlowMaterial, webgl] = initScene(false);
+const webgpu = initScene(true);
+const webgl = initScene(false);
 
 /**
  * Set up the GUI for manipulating parameters
@@ -144,67 +121,68 @@ const [fakeGlowMaterial, webgl] = initScene(false);
 const gui = new dat.GUI()
 
 gui
-  .add(params, 'falloff')
-  .min(0)
-  .max(1)
-  .step(0.01)
-  .onChange((falloff) => {
-    fakeGlowMaterial.uniforms.falloff.value = falloff;
-    fakeGlowMaterialWebGPU.uFalloff.value = falloff;
+  .add(params, 'side')
+  .options([THREE.FrontSide, THREE.BackSide, THREE.DoubleSide])
+  .onChange((side) => {
+    console.log(side);
+    webgpu.side = side;
+    webgl.side = side;
+    webgpu.needsUpdate = true;
+    webgl.needsUpdate = true;
   })
   .name('Falloff');
-gui
-  .add(params, 'glowInternalRadius')
-  .min(-10)
-  .max(10)
-  .step(0.01)
-  .onChange((glowInternalRadius) => {
-    fakeGlowMaterial.uniforms.glowInternalRadius.value = glowInternalRadius;
-    fakeGlowMaterialWebGPU.uGlowInternalRadius.value = glowInternalRadius;
-  })
-  .name('Glow Internal Radius');
-gui
-  .addColor(
-    {
-      GlowColor: params.glowColor.getStyle()
-    },
-    'GlowColor'
-  )
-  .onChange((color) => {
-    fakeGlowMaterial.uniforms.glowColor.value.setStyle(color);
-    fakeGlowMaterialWebGPU.uGlowColor.value = new THREE.Color(color);
-  })
-  .name('Glow Color');
-gui
-  .add(params, 'glowSharpness')
-  .min(0)
-  .max(1)
-  .step(0.01)
-  .onChange((glowSharpness) => {
-    fakeGlowMaterial.uniforms.glowSharpness.value = glowSharpness;
-    fakeGlowMaterialWebGPU.uGlowSharpness.value = glowSharpness;
-  })
-  .name('Glow Sharpness');
-gui
-  .add(params, 'opacity')
-  .min(0)
-  .max(1)
-  .step(0.01)
-  .onChange((opacity) => {
-    fakeGlowMaterial.uniforms.opacity.value = opacity;
-    fakeGlowMaterialWebGPU.uOpacity.value = opacity;
-  })
-  .name('Opacity');
+// gui
+//   .add(params, 'glowInternalRadius')
+//   .min(-10)
+//   .max(10)
+//   .step(0.01)
+//   .onChange((glowInternalRadius) => {
+//     fakeGlowMaterial.uniforms.glowInternalRadius.value = glowInternalRadius;
+//     fakeGlowMaterialWebGPU.uGlowInternalRadius.value = glowInternalRadius;
+//   })
+//   .name('Glow Internal Radius');
+// gui
+//   .addColor(
+//     {
+//       GlowColor: params.glowColor.getStyle()
+//     },
+//     'GlowColor'
+//   )
+//   .onChange((color) => {
+//     fakeGlowMaterial.uniforms.glowColor.value.setStyle(color);
+//     fakeGlowMaterialWebGPU.uGlowColor.value = new THREE.Color(color);
+//   })
+//   .name('Glow Color');
+// gui
+//   .add(params, 'glowSharpness')
+//   .min(0)
+//   .max(1)
+//   .step(0.01)
+//   .onChange((glowSharpness) => {
+//     fakeGlowMaterial.uniforms.glowSharpness.value = glowSharpness;
+//     fakeGlowMaterialWebGPU.uGlowSharpness.value = glowSharpness;
+//   })
+//   .name('Glow Sharpness');
+// gui
+//   .add(params, 'opacity')
+//   .min(0)
+//   .max(1)
+//   .step(0.01)
+//   .onChange((opacity) => {
+//     fakeGlowMaterial.uniforms.opacity.value = opacity;
+//     fakeGlowMaterialWebGPU.uOpacity.value = opacity;
+//   })
+//   .name('Opacity');
 
 
-gui
-  .add(params, 'toneMappingExposure')
-  .min(0)
-  .max(1)
-  .step(0.01)
-  .onChange((toneMappingExposure) => {
-    // fakeGlowMaterialWebGPU.uToneMappingExposure.value = toneMappingExposure;
-    webgpu.toneMappingExposure = toneMappingExposure;
-    webgl.toneMappingExposure = toneMappingExposure;
-  })
-  .name('ToneMappingExposure');
+// gui
+//   .add(params, 'toneMappingExposure')
+//   .min(0)
+//   .max(1)
+//   .step(0.01)
+//   .onChange((toneMappingExposure) => {
+//     // fakeGlowMaterialWebGPU.uToneMappingExposure.value = toneMappingExposure;
+//     webgpu.toneMappingExposure = toneMappingExposure;
+//     webgl.toneMappingExposure = toneMappingExposure;
+//   })
+//   .name('ToneMappingExposure');
