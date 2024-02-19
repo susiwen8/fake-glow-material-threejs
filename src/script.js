@@ -1,37 +1,39 @@
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import * as dat from 'lil-gui'
-import WebGPURenderer from 'three/addons/renderers/webgpu/WebGPURenderer.js';
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import * as dat from "lil-gui";
+import WebGPURenderer from "three/addons/renderers/webgpu/WebGPURenderer.js";
 
 const params = {
-  side: 1,
-}
+  side: THREE.BackSide,
+};
 
 function initScene(isWebGPU) {
   /**
    * Scene
    */
-  const canvas = document.querySelector(isWebGPU ? 'canvas.webgpu' : 'canvas.webgl')
-  const scene = new THREE.Scene()
+  const canvas = document.querySelector(
+    isWebGPU ? "canvas.webgpu" : "canvas.webgl"
+  );
+  const scene = new THREE.Scene();
 
   /**
    * ScreenResolution
    */
   const screenRes = {
     width: window.innerWidth,
-    height: window.innerHeight / 2
-  }
+    height: window.innerHeight / 2,
+  };
 
-  window.addEventListener('resize', () => {
-    screenRes.width = window.innerWidth
-    screenRes.height = window.innerHeight / 2
+  window.addEventListener("resize", () => {
+    screenRes.width = window.innerWidth;
+    screenRes.height = window.innerHeight / 2;
 
-    camera.aspect = screenRes.width / screenRes.height
-    camera.updateProjectionMatrix()
+    camera.aspect = screenRes.width / screenRes.height;
+    camera.updateProjectionMatrix();
 
-    renderer.setSize(screenRes.width, screenRes.height)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1))
-  })
+    renderer.setSize(screenRes.width, screenRes.height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
+  });
 
   /**
    * Camera
@@ -41,72 +43,72 @@ function initScene(isWebGPU) {
     screenRes.width / screenRes.height,
     1,
     1000
-  )
-  camera.position.set(0, 0, 6)
-  scene.add(camera)
+  );
+  camera.position.set(0, 0, 6);
+  scene.add(camera);
 
   /**
    * Controls
    */
-  const controls = new OrbitControls(camera, canvas)
-  controls.enableDamping = true
-  controls.maxDistance = 8
-  controls.minDistance = 2
-  controls.maxPolarAngle = Math.PI / 1.7
-  controls.minPolarAngle = 1.1
-  controls.autoRotate = true
-  controls.target.set(0, -0.3, 0)
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.maxDistance = 8;
+  controls.minDistance = 2;
+  controls.maxPolarAngle = Math.PI / 1.7;
+  controls.minPolarAngle = 1.1;
+  controls.autoRotate = true;
+  controls.target.set(0, -0.3, 0);
 
   /**
    * Lights
    */
-  const light = new THREE.DirectionalLight()
-  light.intensity = 1
-  light.position.set(-20, 20, 50)
-  scene.add(light)
+  const light = new THREE.DirectionalLight();
+  light.intensity = 1;
+  light.position.set(-20, 20, 50);
+  scene.add(light);
 
   // const dirLightHelper = new THREE.DirectionalLightHelper( light, 10000000, 0xffffff );
   // scene.add( dirLightHelper );
 
-  const ambientLight = new THREE.AmbientLight()
-  ambientLight.intensity = .1
-  scene.add(ambientLight)
+  const ambientLight = new THREE.AmbientLight();
+  ambientLight.intensity = 0.1;
+  scene.add(ambientLight);
 
   /**
    * Renderer
    */
   const renderer = new (isWebGPU ? WebGPURenderer : THREE.WebGLRenderer)({
     canvas: canvas,
-    powerPreference: 'high-performance',
+    powerPreference: "high-performance",
     antialias: true,
-  })
+  });
 
-  renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1
-  renderer.setSize(screenRes.width, screenRes.height)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1))
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1;
+  renderer.setSize(screenRes.width, screenRes.height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
 
   /**
    * SkyBox
    */
-  const geometry = new THREE.SphereGeometry(1, 40, 40)
-  const texture = new THREE.TextureLoader().load('background2.jpg')
-  texture.flipY = true
+  const geometry = new THREE.SphereGeometry(1, 40, 40);
+  const texture = new THREE.TextureLoader().load("background2.jpg");
+  texture.flipY = true;
   const material = new THREE.MeshStandardMaterial({
     map: texture,
-    side: THREE.DoubleSide,
-  })
+    side: params.side,
+  });
 
-  const skyBox = new THREE.Mesh(geometry, material)
-  scene.add(skyBox)
-  skyBox.rotation.y = -1
+  const skyBox = new THREE.Mesh(geometry, material);
+  scene.add(skyBox);
+  skyBox.rotation.y = -1;
 
   const tick = () => {
-    controls.update()
-    renderer.render(scene, camera)
-    window.requestAnimationFrame(tick)
-  }
-  
+    controls.update();
+    renderer.render(scene, camera);
+    window.requestAnimationFrame(tick);
+  };
+
   tick();
 
   return material;
@@ -118,10 +120,10 @@ const webgl = initScene(false);
 /**
  * Set up the GUI for manipulating parameters
  */
-const gui = new dat.GUI()
+const gui = new dat.GUI();
 
 gui
-  .add(params, 'side')
+  .add(params, "side")
   .options([THREE.FrontSide, THREE.BackSide, THREE.DoubleSide])
   .onChange((side) => {
     console.log(side);
@@ -130,7 +132,7 @@ gui
     webgpu.needsUpdate = true;
     webgl.needsUpdate = true;
   })
-  .name('Falloff');
+  .name("side");
 // gui
 //   .add(params, 'glowInternalRadius')
 //   .min(-10)
@@ -173,7 +175,6 @@ gui
 //     fakeGlowMaterialWebGPU.uOpacity.value = opacity;
 //   })
 //   .name('Opacity');
-
 
 // gui
 //   .add(params, 'toneMappingExposure')
